@@ -161,8 +161,8 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			}
 			name -= 1;
 			//==============================================
-			//tMRCA = getMRCA(sample1, sample2);
-			tMRCA = tMRCA_find(tree, sample1, sample2);
+			tMRCA = getMRCA(sample1, sample2);
+			//tMRCA = tMRCA_find(tree, sample1, sample2);
 
 			if(tMRCA - (*itr1).second.tMRCA > TOLERANCE || tMRCA - (*itr1).second.tMRCA < -TOLERANCE)
 			{
@@ -211,8 +211,8 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			}
 			name -= 1;
 			//==============================================
-			//tMRCA = getMRCA(sample1, sample2);
-			tMRCA = tMRCA_find(tree, sample1, sample2);
+			tMRCA = getMRCA(sample1, sample2);
+			//tMRCA = tMRCA_find(tree, sample1, sample2);
 
 			if(tMRCA - (*itr2).second.tMRCA > TOLERANCE || tMRCA - (*itr2).second.tMRCA < -TOLERANCE)
 			{

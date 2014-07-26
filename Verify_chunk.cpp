@@ -240,7 +240,7 @@ void * chunk_level(void * p)
     pointer3->start = p2.end;
     tree_temp = block_finding(pointer3, &pool, filehandle, tree_temp, package->end_exp);
 
-    //=== block level function ===
+    //======= block level function =======
     // (void *) is used to transfer different types of pointers
     // there are no previous block
     int count = 1;

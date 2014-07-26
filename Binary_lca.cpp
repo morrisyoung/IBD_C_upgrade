@@ -27,6 +27,8 @@
 #include <unordered_map>
 #include <vector>
 #include <sys/time.h>
+#include <string.h>
+#include "Basic.h"
 
 
 using namespace std;
@@ -320,7 +322,7 @@ void LCA_RMQ()
 
 
 // function: the entrance to the LCA processing
-void LCA_preprocess(char * tree)
+void LCA_preprocess(char * tree, LCA_package * lca_package)
 {
 	// prepare the data structures for further processing
 	//================================================================
@@ -357,6 +359,21 @@ void LCA_preprocess(char * tree)
     // there has some problems in this fuction
 	LCA_RMQ();
 
+	//================ fill the LCA package =================
+	lca_package->coordinate = get_coordinate(tree);
+
+	memcpy(&(lca_package->E), &E, sizeof(E));
+	memcpy(&(lca_package->L), &L, sizeof(L));
+	memcpy(&(lca_package->r), &r, sizeof(r));
+	memcpy(&(lca_package->R), &R, sizeof(R));
+
+	memcpy(&(lca_package->list_up_val), &list_up_val, sizeof(list_up_val));
+	memcpy(&(lca_package->list_up_pos), &list_up_pos, sizeof(list_up_pos));
+	memcpy(&(lca_package->list_up_type), &list_up_type, sizeof(list_up_type));
+
+	memcpy(&(lca_package->upResult_val), &upResult_val, sizeof(upResult_val));
+	memcpy(&(lca_package->upResult_pos), &upResult_pos, sizeof(upResult_pos));
+
 	return;
 }
 
@@ -369,12 +386,12 @@ void LCA_preprocess(char * tree)
 // 4. use the r to get the actual tMRCA value
 // call:
 // double tMRCA = getMRCA(leaf1, leaf2, package, mode);
-double getMRCA(long int leaf1, long int leaf2)
+double getMRCA(long int leaf1, long int leaf2, LCA_package * lca_package)
 {
 	double tMRCA;
 
-	int pos1 = R[leaf1-1];
-	int pos2 = R[leaf2-1];
+	int pos1 = lca_package->R[leaf1-1];
+	int pos2 = lca_package->R[leaf2-1];
 	if(pos1 > pos2)  // let pos1 < pos2
 	{
 		int temp = pos1;
@@ -394,8 +411,8 @@ double getMRCA(long int leaf1, long int leaf2)
 		int pos22 = pos2 - block_num * BLOCK_SIZE;
 		string query;
 		intdashint(pos11, pos22, &query);
-		int index = MODE_BLOCK[list_up_type[block_num]][query] + block_num * BLOCK_SIZE;
-		tMRCA = r[E[index]];
+		int index = MODE_BLOCK[lca_package->list_up_type[block_num]][query] + block_num * BLOCK_SIZE;
+		tMRCA = lca_package->r[lca_package->E[index]];
 	}
 	else
 	{
@@ -408,18 +425,18 @@ double getMRCA(long int leaf1, long int leaf2)
 			int pos11 = pos1 - block_num1 * BLOCK_SIZE;
 			string query1;
 			intdashint(pos11, BLOCK_SIZE-1, &query1);
-			int index1 = MODE_BLOCK[list_up_type[block_num1]][query1] + block_num1 * BLOCK_SIZE;
+			int index1 = MODE_BLOCK[lca_package->list_up_type[block_num1]][query1] + block_num1 * BLOCK_SIZE;
 
 			int block_num2 = int(coordinate2);
 			int pos22 = pos2 - block_num2 * BLOCK_SIZE;
 			string query2;
 			intdashint(0, pos22, &query2);
-			int index2 = MODE_BLOCK[list_up_type[block_num2]][query2] + block_num2 * BLOCK_SIZE;
+			int index2 = MODE_BLOCK[lca_package->list_up_type[block_num2]][query2] + block_num2 * BLOCK_SIZE;
 
-			if(L[index1] < L[index2])
-				tMRCA = r[E[index1]];
+			if(lca_package->L[index1] < lca_package->L[index2])
+				tMRCA = lca_package->r[lca_package->E[index1]];
 			else
-				tMRCA = r[E[index2]];
+				tMRCA = lca_package->r[lca_package->E[index2]];
 		}
 		else
 		{
@@ -428,13 +445,13 @@ double getMRCA(long int leaf1, long int leaf2)
 			int pos11 = pos1 - block_num1 * BLOCK_SIZE;
 			string query1;
 			intdashint(pos11, BLOCK_SIZE-1, &query1);
-			int index1 = MODE_BLOCK[list_up_type[block_num1]][query1] + block_num1 * BLOCK_SIZE;
+			int index1 = MODE_BLOCK[lca_package->list_up_type[block_num1]][query1] + block_num1 * BLOCK_SIZE;
 
 			int block_num2 = int(coordinate2);
 			int pos22 = pos2 - block_num2 * BLOCK_SIZE;
 			string query2;
 			intdashint(0, pos22, &query2);
-			int index2 = MODE_BLOCK[list_up_type[block_num2]][query2] + block_num2 * BLOCK_SIZE;
+			int index2 = MODE_BLOCK[lca_package->list_up_type[block_num2]][query2] + block_num2 * BLOCK_SIZE;
 
 			// process the third index on which there may be a minimum value
 			// this is the range:
@@ -443,7 +460,7 @@ double getMRCA(long int leaf1, long int leaf2)
 			if(block_num1 + 1 == block_num2 - 1)
 			{
 				// there is only one block between
-				index3 = int(list_up_pos[block_num1+1] + (block_num1+1) * BLOCK_SIZE);
+				index3 = int(lca_package->list_up_pos[block_num1+1] + (block_num1+1) * BLOCK_SIZE);
 			}
 			else
 			{
@@ -454,27 +471,27 @@ double getMRCA(long int leaf1, long int leaf2)
 				intdashint(block_num1+1, block_num1+1+interval-1, &query1);
 				string query2;
 				intdashint(block_num2-1-interval+1, block_num2-1, &query2);
-				if(upResult_val[query1] < upResult_val[query2])
-					index3 = upResult_pos[query1];  // this is the block number, not the actual index
+				if(lca_package->upResult_val[query1] < lca_package->upResult_val[query2])
+					index3 = lca_package->upResult_pos[query1];  // this is the block number, not the actual index
 				else
-					index3 = upResult_pos[query2];
-				index3 = int(list_up_pos[index3] + index3 * BLOCK_SIZE);
+					index3 = lca_package->upResult_pos[query2];
+				index3 = int(lca_package->list_up_pos[index3] + index3 * BLOCK_SIZE);
 			}
 
 			// now compare index1, index2 and index3 in the L
-			if(L[index1] < L[index2])
+			if(lca_package->L[index1] < lca_package->L[index2])
 			{
-				if(L[index1] < L[index3])
-					tMRCA = r[E[index1]];
+				if(lca_package->L[index1] < lca_package->L[index3])
+					tMRCA = lca_package->r[lca_package->E[index1]];
 				else
-					tMRCA = r[E[index3]];
+					tMRCA = lca_package->r[lca_package->E[index3]];
 			}
 			else
 			{
-				if(L[index2] < L[index3])
-					tMRCA = r[E[index2]];
+				if(lca_package->L[index2] < lca_package->L[index3])
+					tMRCA = lca_package->r[lca_package->E[index2]];
 				else
-					tMRCA = r[E[index3]];
+					tMRCA = lca_package->r[lca_package->E[index3]];
 			}
 		}
 	}

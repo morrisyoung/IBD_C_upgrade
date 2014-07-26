@@ -5,6 +5,7 @@
 #include "Package.h"
 #include "Binary_chunk.h"
 #include "Binary_block.h"
+#include "Binary_lca.h"
 #include "Global.h"
 #include "Basic.h"
 #include "Parser.h"
@@ -78,7 +79,7 @@ char * block_finding(block_package * package, list<char *> * pool_pointer, FILE 
     {
         package->end = coordinate;
         // !!! potential problems here !!!
-        //unchanged_pairs_hash(tree_first, tree_last, &(package->hashtable));
+      	//unchanged_pairs_hash(tree_first, tree_last, &(package->hashtable));
         // or we should use the nlogn algorithm
         IBD_hash(tree_first, tree_last, &(package->hashtable));
 
@@ -104,9 +105,9 @@ char * block_finding(block_package * package, list<char *> * pool_pointer, FILE 
                 tree_last = (*pool_pointer).back();
             }
             package->end = get_coordinate(tree_last);
-            //unchanged_pairs_hash(tree_first, tree_last, &(package->hashtable));
+			//unchanged_pairs_hash(tree_first, tree_last, &(package->hashtable));
             // or we should use the nlogn algorithm
-            IBD_hash(tree_first, tree_last, &(package->hashtable));
+			IBD_hash(tree_first, tree_last, &(package->hashtable));
 
             // prepare a new tree and judge whether or not the present block is the last block
             if(coordinate >= end_exp && package->chunk_num == THREADS)
@@ -209,6 +210,7 @@ void * chunk_level(void * p)
     double * table_tMRCA = (double *)malloc(sizeof(double) * SAMPLE * SAMPLE);
     parser(tree, table_tMRCA);
     list<char *> pool;  // this is a queue; please use HEAP (for memory overflaw safe)
+    vector<LCA_package *> lca_env;	// this is the present block LCA env
 
     // these are local things in this scope, and they will be updated after each loop
     block_package p1;
@@ -225,6 +227,7 @@ void * chunk_level(void * p)
     // in the following code, tree_temp is the pointer to the last tree of previous block/the first block of present block
     char * tree_temp = tree;
     pool.push_back(tree_temp);
+    long int coordinate;
     //===========================================================
 
     // we assume that there are at least two blocks in this chunk; then we step into the loop
@@ -243,10 +246,42 @@ void * chunk_level(void * p)
     //=== block level function ===
     // (void *) is used to transfer different types of pointers
     // there are no previous block
+    //== prepare the LCA env ==
+	while(1)	// FCFS model for the pool of trees; prepare for the LCA env
+	{
+		// get a tree from the pool
+		tree = pool.front();
+		coordinate = get_coordinate(tree);
+
+		// get the lca env
+		LCA_package * lca_package = (LCA_package *)malloc(sizeof(LCA_package));
+		LCA_preprocess(tree, lca_package);
+		lca_env.push_back(lca_package);
+
+		// test whether or not this is the last coordinate in this block
+		if(coordinate == pointer2->end)
+		{
+			break;
+		}
+		else
+		{
+			free(tree);
+			pool.pop_front();
+			continue;
+		}
+	}
+	//== perform the binary search ==
     int count = 1;
     printf("working on #%d block for thread #%d; start: %ld; end: %ld; interval: %ld\n", count, package->seq, pointer2->start, pointer2->end, (pointer2->end - pointer2->start));
-    block_level(table, table_tMRCA, pointer_temp, pointer2, pointer3, &pool);
+    block_level(table, table_tMRCA, pointer_temp, pointer2, pointer3, lca_env);
     count ++;
+    //== release the LCA env ==
+    for(auto itr = lca_env.begin(); itr != lca_env.end(); itr ++)
+    {
+    	free(*itr);
+    }
+    lca_env.clear();
+
 
     //===================== here we go: the LOOP ======================
     while(pointer3->last != 1)
@@ -267,10 +302,61 @@ void * chunk_level(void * p)
         pointer3->start = pointer2->end;
         tree_temp = block_finding(pointer3, &pool, filehandle, tree_temp, package->end_exp);
 
+
+        // DEBUG
+        //printf("@@\n");
+
+
         //================ block level function ================
+	    //== prepare the LCA env ==
+		while(1)	// FCFS model for the pool of trees; prepare for the LCA env
+		{
+			// get a tree from the pool
+			tree = pool.front();
+			coordinate = get_coordinate(tree);
+
+			// get the lca env
+			LCA_package * lca_package = (LCA_package *)malloc(sizeof(LCA_package));
+			LCA_preprocess(tree, lca_package);
+			lca_env.push_back(lca_package);
+
+			// test whether or not this is the last coordinate in this block
+			if(coordinate == pointer2->end)
+			{
+				break;
+			}
+			else
+			{
+				free(tree);
+				pool.pop_front();
+				continue;
+			}
+		}
+
+		// DEBUG
+		//printf("@@@\n");
+
+		//== perform the binary search ==
         printf("working on #%d block for thread #%d; start: %ld; end: %ld; interval: %ld\n", count, package->seq, pointer2->start, pointer2->end, (pointer2->end - pointer2->start));
-        block_level(table, table_tMRCA, pointer1, pointer2, pointer3, &pool);
+        block_level(table, table_tMRCA, pointer1, pointer2, pointer3, lca_env);
         count ++;
+
+
+        // DEBUG
+        //printf("##\n");
+
+
+	    //== release the LCA env ==
+	    for(auto itr = lca_env.begin(); itr != lca_env.end(); itr ++)
+	    {
+	    	free(*itr);
+	    }
+	    lca_env.clear();
+
+
+	    // DEBUG
+	    //printf("###\n");
+
     }
 
     //============= perform the last block level function ==============
@@ -278,8 +364,39 @@ void * chunk_level(void * p)
     pointer2 = pointer3;
     // (void *) is used to transfer different types of pointers
     // there are no following block
+    //== prepare the LCA env ==
+	while(1)	// FCFS model for the pool of trees; prepare for the LCA env
+	{
+		// get a tree from the pool
+		tree = pool.front();
+		coordinate = get_coordinate(tree);
+
+		// get the lca env
+		LCA_package * lca_package = (LCA_package *)malloc(sizeof(LCA_package));
+		LCA_preprocess(tree, lca_package);
+		lca_env.push_back(lca_package);
+
+		// test whether or not this is the last coordinate in this block
+		if(coordinate == pointer2->end)
+		{
+			break;
+		}
+		else
+		{
+			free(tree);
+			pool.pop_front();
+			continue;
+		}
+	}
+	//== perform the binary search ==
     printf("working on #%d block for thread #%d; start: %ld; end: %ld; interval: %ld\n", count, package->seq, pointer2->start, pointer2->end, (pointer2->end - pointer2->start));
-    block_level(table, table_tMRCA, pointer1, pointer2, pointer_temp, &pool);
+    block_level(table, table_tMRCA, pointer1, pointer2, pointer_temp, lca_env);
+    //== release the LCA env ==
+    for(auto itr = lca_env.begin(); itr != lca_env.end(); itr ++)
+    {
+    	free(*itr);
+    }
+    lca_env.clear();
 
 
     //=========== before we return, release the local HEAP ============

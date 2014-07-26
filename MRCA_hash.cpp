@@ -664,6 +664,7 @@ void IBD_hash(char * tree1, char * tree2, unordered_map<long int, double> * resu
 	// in practice, we can store the second hashing table, and when next time we enter, we can directly use it
 	// we can achieve this by storing the second hashing table as global in this scope
 
+	(*resultpointer).clear();
 
 	// clean the global variables
 	h11.clear();

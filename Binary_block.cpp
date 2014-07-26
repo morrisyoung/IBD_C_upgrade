@@ -17,6 +17,11 @@
 // (a tMRCA value within the tolerant range of the first tMRCA value will be regarded as the same with the first tMRCA value)
 
 
+// Jul 26 0:04
+// has not yet start coding this block
+// this block is where the binary search actually exists
+
+
 #include "Binary_block.h"
 #include "Package.h"
 #include "Binary_lca.h"
@@ -29,6 +34,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <sys/time.h>
+#include <vector>
 
 
 using namespace std;
@@ -41,16 +47,16 @@ using namespace std;
 // output:
 //	saved IBD segment during the process
 //	updated tables (A and B)
-void block_level(long int * table, double * table_tMRCA, block_package * previous, block_package * present, block_package * next, list<char *> * pool)
+void block_level(long int * table, double * table_tMRCA, block_package * previous, block_package * present, block_package * next, vector<LCA_package *> lca_env)
 {
 	// algorithm:
 	// 1. go through all the hashing tables, and get the candidates waiting to be verified
-	// 2. go through all the trees in present block, and update table and report if needed
+	// 2. for each of the candidates (alpha or beta), binary search its terminate point
 
 	//========================= construct the candidate lists ============================
 	// the following two are local, which means they will be dropped after this function
-	unordered_map<long int, candidate> can_list1;	// alpha and beta
-	unordered_map<long int, candidate> can_list2;	// delta and epsilon
+	unordered_map<long int, double> can_list1;	// alpha
+	unordered_map<long int, double> can_list2;	// beta
 
 	//==============
 	// alpha filling
@@ -62,12 +68,7 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			std::unordered_map<long int, double>::const_iterator got = present->hashtable.find((*itr).first);
   			if(got == present->hashtable.end())  // this is alpha
   			{
-  				candidate can;
-  				can.type1 = 1;
-  				can.type2 = 0;
-  				//can.tMRCA = (*itr).second;
-  				can.tMRCA = table_tMRCA[(*itr).first];
-  				can_list1[(*itr).first] = can;
+  				can_list1[(*itr).first] = table_tMRCA[(*itr).first];
   			}
 		}
 	}
@@ -79,122 +80,36 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 		for(auto itr = next->hashtable.begin(); itr != next->hashtable.end(); itr ++)
 		{
 			std::unordered_map<long int, double>::const_iterator got = present->hashtable.find((*itr).first);
-  			if(got == present->hashtable.end())
+  			if(got == present->hashtable.end())  // this is beta
   			{
-  				// this is a beta, but we should judge whether it has already been in can_list1
-  				std::unordered_map<long int, candidate>::const_iterator got1 = can_list1.find((*itr).first);
-  				if(got1 != can_list1.end())  // find you
-  				{
-  					can_list1[(*itr).first].type2 = 1;
-  				}
-  				else
-  				{
-					candidate can;
-  					can.type1 = 0;
-  					can.type2 = 1;
-  					can.tMRCA = 0;
-  					can_list1[(*itr).first] = can;
-  				}
+  				// the reference tMRCA should be further considered
+  				can_list2[(*itr).first] = next->hashtable[(*itr).first];
   			}
 		}
 	}
-	//============================
-	// no matter what happened, perform delta filling (epsilon no need to get filled)
-	//============================
-	for(auto itr = present->hashtable.begin(); itr != present->hashtable.end(); itr ++)
-	{
-		candidate can;
-		can.type1 = 1;
-		can.type2 = 0;
-		//can.tMRCA = (*itr).second;
-		can.tMRCA = table_tMRCA[(*itr).first];
-		can_list2[(*itr).first] = can;
-	}
-	//============================
-	// working table initialization -> no need, because we initialize it at the very first
-	//============================
-	//
-	//
-	//
-	//
-	//
 
-
-	//================================== verification ==================================
-	// otherwise, we should verify whatever we should verify
+	//================================== binary search ==================================
 	double tMRCA;
 	long int coordinate;
 	long int sample1, sample2, name;
 	char * tree;
+	LCA_package * lca_package;
+	LCA_package * lca_package_target;
+	int pointer;
+	int direction;
 
-	// DEBUG
-	//cout << can_list1.size() << endl;
-	//cout << can_list2.size() << endl;
-
-	while(1)	// FCFS model for the pool of trees
+	//========================== search alpha ============================
+	for(auto itr = can_list1.begin(); itr != can_list1.end(); itr ++)
 	{
-		// get a tree from the pool
-		tree = (*pool).front();
-		coordinate = get_coordinate(tree);
-		// now I have all the trees and I can begin verifying.
-
-		//====== LCA pre-processing ======
-	    LCA_preprocess(tree);
-
-	    // alpha and beta checks
-		for(auto itr1 = can_list1.begin(); itr1 != can_list1.end(); itr1 ++)
+		name = (*itr).first;
+		//tMRCA = (*itr).second;
+		direction = (int)(lca_env.size()/2);
+		pointer = -1;
+		while(1)
 		{
-			name = (*itr1).first;	// this is the pair
-			//(*itr1).second	// this is the candidate
-			//============ get the sample pair =============
-			name += 1;
-			if(name % SAMPLE == 0)
-			{
-				sample1 = name / SAMPLE;
-				sample2 = SAMPLE;
-			}
-			else
-			{
-				sample1 = name / SAMPLE + 1;
-				sample2 = name % SAMPLE;
-			}
-			name -= 1;
-			//==============================================
-			//tMRCA = getMRCA(sample1, sample2);
-			tMRCA = tMRCA_find(tree, sample1, sample2);
-
-			if(tMRCA - (*itr1).second.tMRCA > TOLERANCE || tMRCA - (*itr1).second.tMRCA < -TOLERANCE)
-			{
-				// alpha or beta
-				if(  (*itr1).second.type1  )		// this is alpha
-				{
-					// terminate; remove alpha
-					(*itr1).second.type1 = 0;
-					IBDreport(sample1, sample2, table[name], coordinate);
-
-					if(  (*itr1).second.type2  )	// this pair continues as beta
-					{
-						table[name] = coordinate;
-						table_tMRCA[name] = tMRCA;
-						(*itr1).second.tMRCA = tMRCA;
-					}
-					continue;	// process beta only after we have processed all the alphas
-				}
-				if(  (*itr1).second.type2  )	// this is beta
-				{
-					// we don't need to remove beta, because we will perform till the end of this block
-					table[name] = coordinate;
-					table_tMRCA[name] = tMRCA;
-					(*itr1).second.tMRCA = tMRCA;
-				}
-			}
-		}
-
-		// delta and epsilon checks
-		for(auto itr2 = can_list2.begin(); itr2 != can_list2.end(); itr2 ++)
-		{
-			name = (*itr2).first;	// this is the pair
-			//(*itr2).second	// this is the candidate
+			// get the new lca_package
+			pointer += direction;
+			lca_package = lca_env[pointer];
 
 			//============ get the sample pair =============
 			name += 1;
@@ -210,55 +125,106 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			}
 			name -= 1;
 			//==============================================
-			//tMRCA = getMRCA(sample1, sample2);
-			tMRCA = tMRCA_find(tree, sample1, sample2);
 
-			if(tMRCA - (*itr2).second.tMRCA > TOLERANCE || tMRCA - (*itr2).second.tMRCA < -TOLERANCE)
+			tMRCA = getMRCA(sample1, sample2, lca_package);	//--> should be changed
+			//tMRCA = tMRCA_find(tree, sample1, sample2);
+
+			//======== determine the direction of moving ========
+			if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)
 			{
-				if(  (*itr2).second.type1  )		// this is delta
-				{
-					// terminate; remove delta
-					(*itr2).second.type1 = 0;
-					IBDreport(sample1, sample2, table[name], coordinate);
+				// backward search
+				direction = -(int)(abs(direction)/2);
+				lca_package_target = lca_package;
+			}
+			else
+			{
+				// forward search
+				direction = (int)(abs(direction)/2);
+				lca_package_target = lca_env[pointer+1];
+			}
 
-					// change from delta to epsilon
-					// record the coordinate and the tMRCA
-					(*itr2).second.type2 = 1;
-					table[name] = coordinate;	// no segment presently
-					table_tMRCA[name] = tMRCA;
-					(*itr2).second.tMRCA = tMRCA;
-				}
-				else	// this is epsilon
-				{
-					// we should run the epsilon till the end
-					table[name] = coordinate;
-					table_tMRCA[name] = tMRCA;
-					(*itr2).second.tMRCA = tMRCA;
-				}
+			// judge
+			if(direction == 0)	// if the interval of new package and old package is too small, terminate
+			{
+				break;
 			}
 		}
 
-		// test whether or not this is the last coordinate in this block
-		if(coordinate == present->end)
-		{
-			break;
-		}
-		else
-		{
-			free(tree);
-			(*pool).pop_front();
-			continue;
-		}
+		IBDreport(sample1, sample2, table[name], lca_package_target->coordinate);
 	}
-	//================================== verification done ==================================
+
+	//========================== search beta ============================
+	for(auto itr = can_list2.begin(); itr != can_list2.end(); itr ++)
+	{
+		name = (*itr).first;
+		//tMRCA = (*itr).second;
+		direction = (int)(lca_env.size()/2);
+		pointer = -1;
+		while(1)
+		{
+			// get the new lca_package
+			pointer += direction;
+			lca_package = lca_env[pointer];
+
+			//============ get the sample pair =============
+			name += 1;
+			if(name % SAMPLE == 0)
+			{
+				sample1 = name / SAMPLE;
+				sample2 = SAMPLE;
+			}
+			else
+			{
+				sample1 = name / SAMPLE + 1;
+				sample2 = name % SAMPLE;
+			}
+			name -= 1;
+			//==============================================
+			tMRCA = getMRCA(sample1, sample2, lca_package);	//--> should be changed
+			//tMRCA = tMRCA_find(tree, sample1, sample2);
+
+			//======== determine the direction of moving ========
+			if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)
+			{
+				// forward search
+				direction = (int)(abs(direction)/2);
+				lca_package_target = lca_env[pointer+1];
+			}
+			else
+			{
+				// backward search
+				direction = -(int)(abs(direction)/2);
+				lca_package_target = lca_package;
+			}
+
+			// judge
+			if(direction == 0)	// if the interval of new package and old package is too small, terminate
+			{
+				break;
+			}
+		}
+
+		// DEBUG
+		//printf("^^\n");
+
+
+		table[name] = lca_package_target->coordinate;
+
+		// DEBUG
+		//printf("^^\n");
+
+
+		table_tMRCA[name] = tMRCA;
+	}
+	//================================== binary search done ==================================
 
 	//========= if this is the last block, terminate all deltas and betas ==========
 	if(present->last == 1)
 	{
 		// for delta/epsilon (there are only possibly this two kinds of segments)
-		for(auto itr2 = can_list2.begin(); itr2 != can_list2.end(); itr2 ++)
+		for(auto itr = present->hashtable.begin(); itr != present->hashtable.end(); itr ++)
 		{
-			name = (*itr2).first;	// this is the pair
+			name = (*itr).first;	// this is the pair
 			//(*itr2).second	// this is the candidate
 
 			//============ get the sample pair =============

@@ -436,6 +436,8 @@ void unchanged_pairs(char * tree1, char * tree2, double * result_pointer)
 // output: the updated hashtable, in which there are unchanged pairs between this two trees, and their tMRCA
 void unchanged_pairs_hash(char * tree1, char * tree2, unordered_map<long int, double> * result_pointer)
 {
+	(*result_pointer).clear();
+
 	// for the basic functional routines, it's better to use the HEAP rather than the STACK!!
 	double * table1 = (double *)malloc(sizeof(double) * SAMPLE * SAMPLE);
     double * table2 = (double *)malloc(sizeof(double) * SAMPLE * SAMPLE);

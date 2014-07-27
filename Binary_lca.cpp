@@ -362,21 +362,7 @@ void LCA_preprocess(char * tree, LCA_package * lca_package)
 	//================ fill the LCA package =================
 	lca_package->coordinate = get_coordinate(tree);
 
-	/*
-	memcpy(&(lca_package->E), &E, sizeof(E));
-	memcpy(&(lca_package->L), &L, sizeof(L));
-	memcpy(&(lca_package->r), &r, sizeof(r));
-	memcpy(&(lca_package->R), &R, sizeof(R));
-
-	memcpy(&(lca_package->list_up_val), &list_up_val, sizeof(list_up_val));
-	memcpy(&(lca_package->list_up_pos), &list_up_pos, sizeof(list_up_pos));
-	memcpy(&(lca_package->list_up_type), &list_up_type, sizeof(list_up_type));
-
-	memcpy(&(lca_package->upResult_val), &upResult_val, sizeof(upResult_val));
-	memcpy(&(lca_package->upResult_pos), &upResult_pos, sizeof(upResult_pos));
-	*/
-
-	/*
+	//=========== assign these datas =============
 	lca_package->E = E;
 	lca_package->L = L;
 	lca_package->r = r;
@@ -388,8 +374,8 @@ void LCA_preprocess(char * tree, LCA_package * lca_package)
 
 	lca_package->upResult_val = upResult_val;
 	lca_package->upResult_pos = upResult_pos;
-	*/
 
+	/* the very naive method -- for testing
 	// use the very naive method to fill them
 	for(auto itr = E.begin(); itr != E.end(); itr ++)
 		lca_package->E.push_back(*itr);
@@ -411,7 +397,7 @@ void LCA_preprocess(char * tree, LCA_package * lca_package)
 		lca_package->upResult_val[(*itr).first] = (*itr).second;
 	for(auto itr = upResult_pos.begin(); itr != upResult_pos.end(); itr ++)
 		lca_package->upResult_pos[(*itr).first] = (*itr).second;
-
+	*/
 
 	return;
 }

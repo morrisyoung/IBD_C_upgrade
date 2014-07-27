@@ -19,6 +19,9 @@
 // has not yet start coding this block
 // this block is where the binary search actually exists
 
+// Jul 27
+// finished
+
 
 #include "Binary_block.h"
 #include "Package.h"
@@ -126,14 +129,6 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			//==============================================
 			//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
 			tMRCA = getMRCA(sample1, sample2, lca_package);
-			// DEBUG
-			/*
-			tMRCA1 = getMRCA(sample1, sample2, lca_package);
-			tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
-
-			if(tMRCA1 != tMRCA)
-				cout << tMRCA1 << " " << tMRCA << endl;
-			*/
 
 			//======== determine the direction of moving ========
 			if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)
@@ -185,38 +180,7 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			name -= 1;
 			//==============================================
 			//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
-
-			//printf("@@\n");
-
-
-			//cout << pointer << " " << tMRCA << endl;
-			//cout << lca_package->r.size() << endl;
-
-
-
-			/*
-			printf("@@\n");
-			cout << lca_package->r.size() << endl;
-			for(auto itr = lca_package->r.begin(); itr != lca_package->r.end(); itr ++)
-				cout << (*itr) << " ";
-			cout << endl;
-			*/
-
-
 			tMRCA = getMRCA(sample1, sample2, lca_package);
-
-			//printf("@@@\n");
-
-
-			// DEBUG
-			/*
-			tMRCA1 = getMRCA(sample1, sample2, lca_package);
-			tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
-
-			if(tMRCA1 != tMRCA)
-				cout << tMRCA1 << " " << tMRCA << endl;
-			*/
-
 
 			//======== determine the direction of moving ========
 			if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)

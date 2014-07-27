@@ -20,16 +20,12 @@
 // Basic.cpp Basic.h
 
 
-// the working plan:
-// first of all make the sequential version works correctly
-// then tested it in the clusters, see whether there are libraries problems there --> there are, so I should apply for a linux machine in the Lab
-// as the LCA algorithm should be right, so if there are bugs in the testing, then it should be from the MRCA_hash algorithm -> use the
-//  naive_hash algorithm instead to substitute
-
-
 // special notes:
 // as it's kind of hard to deal with the multi-threading (because if the boundary is not dealt with gracefully, the practical running time will be terrible), so
 // we don't use multi-threading for this version of implementation
+
+
+// There are potential errors in IBD_hash(), so we can use the naive parser to substitute for tests
 
 
 #include <iostream>

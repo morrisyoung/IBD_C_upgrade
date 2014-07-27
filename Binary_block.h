@@ -12,7 +12,7 @@
 using namespace std;
 
 
-void block_level(long int *, double *, block_package *, block_package *, block_package * , vector<LCA_package *>);
+void block_level(long int *, double *, block_package *, block_package *, block_package * , vector<LCA_package> *, vector<char *>);
 
 
 #endif

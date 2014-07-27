@@ -2,9 +2,7 @@
 // function: this is the Block_level functions;
 // algorithm:
 // 1. find candidates;
-// 2. verify;
-// 3. update tables and report if possible.
-// about the table A/B: -2: no present segment; -1: can't see the start of present segment from this chunk; other: segment start
+// 2. binary search;
 
 
 // special notes:
@@ -41,13 +39,14 @@ using namespace std;
 
 
 // input:
-//	table: the start coordinate table for the segment (-1: unseen start from this block; -2: no segment exists)
+//	table: table for the start of the IBD segment
+// 	table_tMRCA: table for the tMRCA of the start of a IBD segment
 //	list: previous/present/next block packages
 //	pool: the pool (address) storing all the trees in present block and next block (doubly block)
 // output:
 //	saved IBD segment during the process
 //	updated tables (A and B)
-void block_level(long int * table, double * table_tMRCA, block_package * previous, block_package * present, block_package * next, vector<LCA_package *> lca_env)
+void block_level(long int * table, double * table_tMRCA, block_package * previous, block_package * present, block_package * next, vector<LCA_package> * lca_env_rep, vector<char *> pool_env)
 {
 	// algorithm:
 	// 1. go through all the hashing tables, and get the candidates waiting to be verified
@@ -89,7 +88,7 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 	}
 
 	//================================== binary search ==================================
-	double tMRCA;
+	double tMRCA, tMRCA1;
 	long int coordinate;
 	long int sample1, sample2, name;
 	char * tree;
@@ -103,13 +102,13 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 	{
 		name = (*itr).first;
 		//tMRCA = (*itr).second;
-		direction = (int)(lca_env.size()/2);
+		direction = (int)((*lca_env_rep).size()/2);
 		pointer = -1;
 		while(1)
 		{
 			// get the new lca_package
 			pointer += direction;
-			lca_package = lca_env[pointer];
+			lca_package = &(*lca_env_rep)[pointer];
 
 			//============ get the sample pair =============
 			name += 1;
@@ -125,9 +124,16 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			}
 			name -= 1;
 			//==============================================
+			//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
+			tMRCA = getMRCA(sample1, sample2, lca_package);
+			// DEBUG
+			/*
+			tMRCA1 = getMRCA(sample1, sample2, lca_package);
+			tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
 
-			tMRCA = getMRCA(sample1, sample2, lca_package);	//--> should be changed
-			//tMRCA = tMRCA_find(tree, sample1, sample2);
+			if(tMRCA1 != tMRCA)
+				cout << tMRCA1 << " " << tMRCA << endl;
+			*/
 
 			//======== determine the direction of moving ========
 			if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)
@@ -140,14 +146,12 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			{
 				// forward search
 				direction = (int)(abs(direction)/2);
-				lca_package_target = lca_env[pointer+1];
+				lca_package_target = &(*lca_env_rep)[pointer+1];
 			}
 
 			// judge
 			if(direction == 0)	// if the interval of new package and old package is too small, terminate
-			{
 				break;
-			}
 		}
 
 		IBDreport(sample1, sample2, table[name], lca_package_target->coordinate);
@@ -158,13 +162,13 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 	{
 		name = (*itr).first;
 		//tMRCA = (*itr).second;
-		direction = (int)(lca_env.size()/2);
+		direction = (int)((*lca_env_rep).size()/2);
 		pointer = -1;
 		while(1)
 		{
 			// get the new lca_package
 			pointer += direction;
-			lca_package = lca_env[pointer];
+			lca_package = &(*lca_env_rep)[pointer];
 
 			//============ get the sample pair =============
 			name += 1;
@@ -180,15 +184,46 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			}
 			name -= 1;
 			//==============================================
-			tMRCA = getMRCA(sample1, sample2, lca_package);	//--> should be changed
-			//tMRCA = tMRCA_find(tree, sample1, sample2);
+			//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
+
+			//printf("@@\n");
+
+
+			//cout << pointer << " " << tMRCA << endl;
+			//cout << lca_package->r.size() << endl;
+
+
+
+			/*
+			printf("@@\n");
+			cout << lca_package->r.size() << endl;
+			for(auto itr = lca_package->r.begin(); itr != lca_package->r.end(); itr ++)
+				cout << (*itr) << " ";
+			cout << endl;
+			*/
+
+
+			tMRCA = getMRCA(sample1, sample2, lca_package);
+
+			//printf("@@@\n");
+
+
+			// DEBUG
+			/*
+			tMRCA1 = getMRCA(sample1, sample2, lca_package);
+			tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
+
+			if(tMRCA1 != tMRCA)
+				cout << tMRCA1 << " " << tMRCA << endl;
+			*/
+
 
 			//======== determine the direction of moving ========
 			if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)
 			{
 				// forward search
 				direction = (int)(abs(direction)/2);
-				lca_package_target = lca_env[pointer+1];
+				lca_package_target = &(*lca_env_rep)[pointer+1];
 			}
 			else
 			{
@@ -199,24 +234,14 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 
 			// judge
 			if(direction == 0)	// if the interval of new package and old package is too small, terminate
-			{
 				break;
-			}
 		}
 
-		// DEBUG
-		//printf("^^\n");
-
-
 		table[name] = lca_package_target->coordinate;
-
-		// DEBUG
-		//printf("^^\n");
-
-
 		table_tMRCA[name] = tMRCA;
 	}
 	//================================== binary search done ==================================
+
 
 	//========= if this is the last block, terminate all deltas and betas ==========
 	if(present->last == 1)

@@ -78,7 +78,6 @@ char * block_finding(block_package * package, list<char *> * pool_pointer, FILE 
     if(coordinate - package->start >= FILTER)   // we should appropriately set FILTER to avoid 0 value
     {
         package->end = coordinate;
-        // !!! potential problems here !!!
       	//unchanged_pairs_hash(tree_first, tree_last, &(package->hashtable));
         // or we should use the nlogn algorithm
         IBD_hash(tree_first, tree_last, &(package->hashtable));
@@ -122,7 +121,6 @@ char * block_finding(block_package * package, list<char *> * pool_pointer, FILE 
         {
             tree_last = (*pool_pointer).back();
             package->end = get_coordinate(tree_last);
-            // !!! potential problems here !!!
             //unchanged_pairs_hash(tree_first, tree_last, &(package->hashtable));
             // or we should use the nlogn algorithm
             IBD_hash(tree_first, tree_last, &(package->hashtable));
@@ -211,6 +209,8 @@ void * chunk_level(void * p)
     parser(tree, table_tMRCA);
     list<char *> pool;  // this is a queue; please use HEAP (for memory overflaw safe)
     vector<LCA_package *> lca_env;	// this is the present block LCA env
+    vector<LCA_package> lca_env_rep;	// this is the actual lca packages
+    vector<char *> pool_env;	// the lca_env corresponding tree pool
 
     // these are local things in this scope, and they will be updated after each loop
     block_package p1;
@@ -244,8 +244,6 @@ void * chunk_level(void * p)
     tree_temp = block_finding(pointer3, &pool, filehandle, tree_temp, package->end_exp);
 
     //=== block level function ===
-    // (void *) is used to transfer different types of pointers
-    // there are no previous block
     //== prepare the LCA env ==
 	while(1)	// FCFS model for the pool of trees; prepare for the LCA env
 	{
@@ -253,10 +251,38 @@ void * chunk_level(void * p)
 		tree = pool.front();
 		coordinate = get_coordinate(tree);
 
+		// another scheme:
+		LCA_package lca_package;
+		lca_env_rep.push_back(lca_package);
+		LCA_package * lca_pointer = &(lca_env_rep.back());
+		LCA_preprocess(tree, lca_pointer);
+		lca_env.push_back(lca_pointer);
+		pool_env.push_back(tree);
+
+
+		/*
+		printf("@@\n");
+		cout << lca_pointer->E.size() << endl;
+		cout << lca_pointer->L.size() << endl;
+		cout << lca_pointer->r.size() << endl;
+		cout << lca_pointer->R.size() << endl;
+		cout << lca_pointer->list_up_val.size() << endl;
+		cout << lca_pointer->list_up_pos.size() << endl;
+		cout << lca_pointer->list_up_type.size() << endl;
+
+		cout << lca_pointer->upResult_val.size() << endl;
+		cout << lca_pointer->upResult_pos.size() << endl;
+		printf("@@@\n");
+		*/
+
+
+		/*
 		// get the lca env
 		LCA_package * lca_package = (LCA_package *)malloc(sizeof(LCA_package));
 		LCA_preprocess(tree, lca_package);
 		lca_env.push_back(lca_package);
+		pool_env.push_back(tree);
+		*/
 
 		// test whether or not this is the last coordinate in this block
 		if(coordinate == pointer2->end)
@@ -265,22 +291,41 @@ void * chunk_level(void * p)
 		}
 		else
 		{
-			free(tree);
+			//free(tree);
 			pool.pop_front();
 			continue;
 		}
 	}
+
+	/*
+	printf("@@@@\n");
+	cout << lca_env_rep.size() << endl;
+	cout << lca_env_rep[0].r.size() << endl;
+	for(auto itr = lca_env_rep[0].r.begin(); itr != lca_env_rep[0].r.end(); itr ++)
+		cout << (*itr) << " ";
+	cout << endl;
+	for(auto itr = lca_env_rep[1].r.begin(); itr != lca_env_rep[1].r.end(); itr ++)
+		cout << (*itr) << " ";
+	cout << endl;
+	*/
+
+
 	//== perform the binary search ==
     int count = 1;
     printf("working on #%d block for thread #%d; start: %ld; end: %ld; interval: %ld\n", count, package->seq, pointer2->start, pointer2->end, (pointer2->end - pointer2->start));
-    block_level(table, table_tMRCA, pointer_temp, pointer2, pointer3, lca_env);
+    block_level(table, table_tMRCA, pointer_temp, pointer2, pointer3, &lca_env_rep, pool_env);
     count ++;
     //== release the LCA env ==
-    for(auto itr = lca_env.begin(); itr != lca_env.end(); itr ++)
+    int i;
+    for(i = 0; i < lca_env.size() - 1; i++)	// we should keep the last one
     {
-    	free(*itr);
+    	//free(lca_env[i]);
+    	free(pool_env[i]);
     }
+    //free(lca_env[i]);
     lca_env.clear();
+    lca_env_rep.clear();
+    pool_env.clear();
 
 
     //===================== here we go: the LOOP ======================
@@ -302,23 +347,31 @@ void * chunk_level(void * p)
         pointer3->start = pointer2->end;
         tree_temp = block_finding(pointer3, &pool, filehandle, tree_temp, package->end_exp);
 
-
-        // DEBUG
-        //printf("@@\n");
-
-
         //================ block level function ================
 	    //== prepare the LCA env ==
+        vector<LCA_package> lca_env_rep;	// don't need to clear this, because this are local things
 		while(1)	// FCFS model for the pool of trees; prepare for the LCA env
 		{
 			// get a tree from the pool
 			tree = pool.front();
 			coordinate = get_coordinate(tree);
 
+
+			// another scheme:
+			LCA_package lca_package;
+			lca_env_rep.push_back(lca_package);
+			LCA_package * lca_pointer = &(lca_env_rep.back());
+			LCA_preprocess(tree, lca_pointer);
+			lca_env.push_back(lca_pointer);
+			pool_env.push_back(tree);
+
+			/*
 			// get the lca env
 			LCA_package * lca_package = (LCA_package *)malloc(sizeof(LCA_package));
 			LCA_preprocess(tree, lca_package);
 			lca_env.push_back(lca_package);
+			pool_env.push_back(tree);
+			*/
 
 			// test whether or not this is the last coordinate in this block
 			if(coordinate == pointer2->end)
@@ -327,43 +380,29 @@ void * chunk_level(void * p)
 			}
 			else
 			{
-				free(tree);
+				//free(tree);
 				pool.pop_front();
 				continue;
 			}
 		}
-
-		// DEBUG
-		//printf("@@@\n");
-
 		//== perform the binary search ==
         printf("working on #%d block for thread #%d; start: %ld; end: %ld; interval: %ld\n", count, package->seq, pointer2->start, pointer2->end, (pointer2->end - pointer2->start));
-        block_level(table, table_tMRCA, pointer1, pointer2, pointer3, lca_env);
+        block_level(table, table_tMRCA, pointer1, pointer2, pointer3, &lca_env_rep, pool_env);
         count ++;
-
-
-        // DEBUG
-        //printf("##\n");
-
-
 	    //== release the LCA env ==
-	    for(auto itr = lca_env.begin(); itr != lca_env.end(); itr ++)
+	    for(i = 0; i < lca_env.size() - 1; i++)	// we should keep the last one
 	    {
-	    	free(*itr);
+	    	//free(lca_env[i]);
+	    	free(pool_env[i]);
 	    }
+	    //free(lca_env[i]);
 	    lca_env.clear();
-
-
-	    // DEBUG
-	    //printf("###\n");
-
+	    pool_env.clear();
     }
 
     //============= perform the last block level function ==============
     pointer1 = pointer2;
     pointer2 = pointer3;
-    // (void *) is used to transfer different types of pointers
-    // there are no following block
     //== prepare the LCA env ==
 	while(1)	// FCFS model for the pool of trees; prepare for the LCA env
 	{
@@ -371,10 +410,22 @@ void * chunk_level(void * p)
 		tree = pool.front();
 		coordinate = get_coordinate(tree);
 
+
+		// another scheme:
+		LCA_package lca_package;
+		lca_env_rep.push_back(lca_package);
+		LCA_package * lca_pointer = &(lca_env_rep.back());
+		LCA_preprocess(tree, lca_pointer);
+		lca_env.push_back(lca_pointer);
+		pool_env.push_back(tree);
+
+		/*
 		// get the lca env
 		LCA_package * lca_package = (LCA_package *)malloc(sizeof(LCA_package));
 		LCA_preprocess(tree, lca_package);
 		lca_env.push_back(lca_package);
+		pool_env.push_back(tree);
+		*/
 
 		// test whether or not this is the last coordinate in this block
 		if(coordinate == pointer2->end)
@@ -383,24 +434,28 @@ void * chunk_level(void * p)
 		}
 		else
 		{
-			free(tree);
+			//free(tree);
 			pool.pop_front();
 			continue;
 		}
 	}
 	//== perform the binary search ==
     printf("working on #%d block for thread #%d; start: %ld; end: %ld; interval: %ld\n", count, package->seq, pointer2->start, pointer2->end, (pointer2->end - pointer2->start));
-    block_level(table, table_tMRCA, pointer1, pointer2, pointer_temp, lca_env);
+    block_level(table, table_tMRCA, pointer1, pointer2, pointer_temp, &lca_env_rep, pool_env);
     //== release the LCA env ==
-    for(auto itr = lca_env.begin(); itr != lca_env.end(); itr ++)
+    for(i = 0; i < lca_env.size() - 1; i++)	// we should keep the last one
     {
-    	free(*itr);
+    	//free(lca_env[i]);
+    	free(pool_env[i]);
     }
+    //free(lca_env[i]);
     lca_env.clear();
+    pool_env.clear();
 
 
     //=========== before we return, release the local HEAP ============
     free(table_tMRCA);
+    fclose(filehandle);
 
 
     // return: the thread#1 should not terminate, but others should

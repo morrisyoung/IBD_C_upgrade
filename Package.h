@@ -1,5 +1,5 @@
 // Package.h
-// function: the entrance of the whole program
+// function: some structures used by the whole program
 
 #ifndef PACKAGE_H
 #define PACKAGE_H

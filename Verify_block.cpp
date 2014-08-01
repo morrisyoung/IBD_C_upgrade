@@ -111,6 +111,37 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 		can.tMRCA = table_tMRCA[(*itr).first];
 		can_list2[(*itr).first] = can;
 	}
+	//==============##########=========############==============
+	// for the last block, if one pair is neither delta nor alpha, we should set it as beta
+	// if this is the last block, we should regard them all as possible betas, because
+	// we want to close all the pairs using the CLENGTH
+	if(present->last == 1)
+	{
+		for(long int i = 1; i <= SAMPLE; i++)
+			for(long int j = i+1; j <= SAMPLE; j++)
+			{
+				long int name = (i - 1) * SAMPLE + j - 1;
+				// check whether this is delta
+  				std::unordered_map<long int, candidate>::const_iterator got = can_list2.find(name);
+  				if(got != can_list2.end())
+  					continue;
+
+  				// this is a beta, but we should judge whether it has already been in can_list1 (alpha)
+  				std::unordered_map<long int, candidate>::const_iterator got1 = can_list1.find(name);
+  				if(got1 != can_list1.end())  // find you
+  				{
+  					can_list1[name].type2 = 1;
+  				}
+  				else
+  				{
+					candidate can;
+  					can.type1 = 0;
+  					can.type2 = 1;
+  					can.tMRCA = 0;
+  					can_list1[name] = can;
+  				}
+			}
+	}
 	//============================
 	// working table initialization -> no need, because we initialize it at the very first
 	//============================
@@ -161,8 +192,8 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			}
 			name -= 1;
 			//==============================================
-			tMRCA = getMRCA(sample1, sample2);
-			//tMRCA = tMRCA_find(tree, sample1, sample2);
+			//tMRCA = getMRCA(sample1, sample2);
+			tMRCA = tMRCA_find(tree, sample1, sample2);
 
 			if(tMRCA - (*itr1).second.tMRCA > TOLERANCE || tMRCA - (*itr1).second.tMRCA < -TOLERANCE)
 			{
@@ -171,6 +202,11 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 				{
 					// terminate; remove alpha
 					(*itr1).second.type1 = 0;
+
+					// DEBUG
+					//cout << "hehe: " << table[name] << " " << coordinate << endl;
+
+
 					IBDreport(sample1, sample2, table[name], coordinate);
 
 					if(  (*itr1).second.type2  )	// this pair continues as beta
@@ -211,8 +247,8 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			}
 			name -= 1;
 			//==============================================
-			tMRCA = getMRCA(sample1, sample2);
-			//tMRCA = tMRCA_find(tree, sample1, sample2);
+			//tMRCA = getMRCA(sample1, sample2);
+			tMRCA = tMRCA_find(tree, sample1, sample2);
 
 			if(tMRCA - (*itr2).second.tMRCA > TOLERANCE || tMRCA - (*itr2).second.tMRCA < -TOLERANCE)
 			{
@@ -220,6 +256,10 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 				{
 					// terminate; remove delta
 					(*itr2).second.type1 = 0;
+
+					// DEBUG
+					//cout << "not hehe: " << table[name] << " " << coordinate << endl;
+
 					IBDreport(sample1, sample2, table[name], coordinate);
 
 					// change from delta to epsilon
@@ -257,6 +297,9 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 	if(present->last == 1)
 	{
 		// for delta/epsilon (there are only possibly this two kinds of segments)
+		// and for the betas (even the betas after alphas)
+		// so just for all pairs
+		/*
 		for(auto itr2 = can_list2.begin(); itr2 != can_list2.end(); itr2 ++)
 		{
 			name = (*itr2).first;	// this is the pair
@@ -279,6 +322,14 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			// no matter this is a delta or epsilon, we shuold always perform termination for it
 			IBDreport(sample1, sample2, table[name], CLENGTH);
 		}
+		*/
+		for(long int i = 1; i <= SAMPLE; i++)
+			for(long int j = i+1; j <= SAMPLE; j++)
+			{
+				name = (i - 1) * SAMPLE + j - 1;
+				// no matter this is a delta or epsilon, we shuold always perform termination for it
+				IBDreport(i, j, table[name], CLENGTH);
+			}
 	}
 
 	return;

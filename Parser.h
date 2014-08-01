@@ -41,6 +41,10 @@ void unchanged_pairs_hash(char *, char *, unordered_map<long int, double> *);
 // output: the updated hashtable, in which there are changed pairs between this two trees, and their new tMRCA
 void changed_pairs_hash(char *, char *, unordered_map<long int, double> *);
 
+// input: one tree
+// output: the updated hashtable, in which there are all pairs with their tMRCA values
+void all_pairs_hash(char *, unordered_map<long int, double> *);
+
 #endif
 
 // end of Parser.h

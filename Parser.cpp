@@ -493,4 +493,28 @@ void changed_pairs_hash(char * tree1, char * tree2, unordered_map<long int, doub
 	return;
 }
 
+
+// input: one tree
+// output: the updated hashtable, in which there are all pairs with their tMRCA values
+void all_pairs_hash(char * tree, unordered_map<long int, double> * result_pointer)
+{
+	// for the basic functional routines, it's better to use the HEAP rather than the STACK!!
+	double * table = (double *)malloc(sizeof(double) * SAMPLE * SAMPLE);
+
+	parser(tree, table);
+
+	long int i, j;
+	long int name;
+
+	for(i = 1; i <= SAMPLE; i++)
+		for(j = i+1; j <= SAMPLE; j++)
+		{
+			name = (i - 1) * SAMPLE + j - 1;
+			(*result_pointer)[name] = table[name];
+		}
+	free(table);
+
+	return;
+}
+
 // end of Parser.cpp

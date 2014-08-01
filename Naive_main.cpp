@@ -1,3 +1,7 @@
+// for cluster users: set the path
+//export LD_LIBRARY_PATH=/ifs/scratch/c2b2/ip_lab/sy2515/shuo-gmp-4.3.2/lib:/ifs/scratch/c2b2/ip_lab/sy2515/shuo-mpfr-2.4.2/lib:/ifs/scratch/c2b2/ip_lab/sy2515/shuo-mpc-0.8.1/lib:/ifs/scratch/c2b2/ip_lab/sy2515/shuo-isl-0.12.2/lib:/ifs/scratch/c2b2/ip_lab/sy2515/shuo-cloog-0.18.1/lib
+
+
 // Naive_main.cpp
 // function: the Naive_xxx are all prepared for the previous n^2 naive algorithm
 // project includes the following files:
@@ -35,8 +39,8 @@ double NUMERIC;
 double TOLERANCE = 0.01;
 long int SAMPLE;
 long int TREELEN;
-int THREADS = 4;
-long int CUTOFF = 1000000;
+int THREADS = 1;
+long int CUTOFF = 4000000;
 long int FILTER;
 long int DISCRETIZATION = 0;
 long int CLENGTH = 100000000;
@@ -79,7 +83,7 @@ int main()
     //
     //
     //
-    sprintf(filename, "%s", "test_1000G_50I_100Million.trees");
+    sprintf(filename, "%s", "test_n3.trees");
     // test.trees has 1000 samples in
 
     // the output filehandle

@@ -76,6 +76,10 @@ char * block_finding(block_package * package, list<char *> * pool_pointer, FILE 
 
     if(coordinate - package->start >= FILTER)   // we should appropriately set FILTER to avoid 0 value
     {
+        // we are sure that there are only two trees, and we are pointing to the second tree
+        //
+        //
+        
         package->end = coordinate;
         // !!! potential problems here !!!
         //unchanged_pairs_hash(tree_first, tree_last, &(package->hashtable));
@@ -89,6 +93,10 @@ char * block_finding(block_package * package, list<char *> * pool_pointer, FILE 
         else
             package->last = 0;
 
+        // we should manually set the unchanged pairs here, because it still may be a segment even if the tMRCA between the
+        // two trees are different
+        all_pairs_hash(tree_first, &(package->hashtable));
+
         return tree_last;
     }
 
@@ -101,20 +109,45 @@ char * block_finding(block_package * package, list<char *> * pool_pointer, FILE 
             // there may be one tree or two trees before
             if(get_coordinate(tree_last) == get_coordinate(tree_first))
             {
+                // there are only two trees, and we are right pointing to the second tree
+                //
+                //
+
                 tree_last = (*pool_pointer).back();
+
+                // we should manually set the unchanged pairs here, because it still may be a segment even if the tMRCA between the
+                // two trees are different
+                all_pairs_hash(tree_first, &(package->hashtable));
+
+                package->end = get_coordinate(tree_last);
+
+                // prepare a new tree and judge whether or not the present block is the last block
+                if(coordinate >= end_exp && package->chunk_num == THREADS)
+                    package->last = 1;
+                else
+                    package->last = 0;
+
+                return tree_last;
             }
-            package->end = get_coordinate(tree_last);
-            //unchanged_pairs_hash(tree_first, tree_last, &(package->hashtable));
-            // or we should use the nlogn algorithm
-            IBD_hash(tree_first, tree_last, &(package->hashtable));
-
-            // prepare a new tree and judge whether or not the present block is the last block
-            if(coordinate >= end_exp && package->chunk_num == THREADS)
-                package->last = 1;
             else
-                package->last = 0;
+            {
+                // there are at least three trees, and it's possible that we are pointing to the third tree (meaning only three trees here)
+                // we should check whether or not there are only three trees, then we should use all_pairs_hash for the package->hashtable
+                package->end = get_coordinate(tree_last);
 
-            return tree_last;
+                //unchanged_pairs_hash(tree_first, tree_last, &(package->hashtable));
+                // or we should use the nlogn algorithm
+                IBD_hash(tree_first, tree_last, &(package->hashtable));
+
+
+                // prepare a new tree and judge whether or not the present block is the last block
+                if(coordinate >= end_exp && package->chunk_num == THREADS)
+                    package->last = 1;
+                else
+                    package->last = 0;
+
+                return tree_last;
+            }
         }
 
         if(coordinate >= end_exp)

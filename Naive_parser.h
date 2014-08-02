@@ -16,6 +16,7 @@ long int parser_sample(char *);
 
 void naive_update(long int, char *, long int *, double *);
 
+double tMRCA_find(char *, long int, long int);
 
 #endif
 

@@ -40,7 +40,7 @@ double TOLERANCE = 0.01;
 long int SAMPLE;
 long int TREELEN;
 int THREADS = 1;
-long int CUTOFF = 4000000;
+long int CUTOFF = 1000000;
 long int FILTER;
 long int DISCRETIZATION = 0;
 long int CLENGTH = 100000000;

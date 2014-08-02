@@ -374,4 +374,162 @@ void naive_update(long int coordinate, char * tree, long int * table_coordinate,
 	return;
 }
 
+
+// input: the tree and the sample pair
+// output: the tMRCA of that pair in that tree
+double tMRCA_find(char * tree, long int sample1, long int sample2)
+{
+	// algorithm:
+	// 1. process to get one of the chromosomes
+	// 2. from now, go up to an internal node (MRCA node)
+	// 3. close this internal node, and at the same time find the other chromosome
+	// 4. if find, record and break; otherwise, jump to step#2
+	// 5. as we must find the pair in this tree, we don't need to detect existing errors about the pair
+	long int person1, person2;
+	double tMRCA = 0;
+
+	// get the start of the tree from here
+	int i = 0;
+	int j = 0;
+	while(tree[i] != '(')i++;
+
+	// get one of the chromosomes from here
+	while(tree[i] != '\0')
+	{
+		if(tree[i] == ',' || tree[i] == ' ' || tree[i] == ';' || tree[i] == '(')
+		{
+			i++;
+			continue;
+		}
+
+		if(tree[i] == ')')
+		{
+			i++;
+			while(tree[i] != ',' && tree[i] != ')' && tree[i] != '\0')i++;
+			continue;
+		}
+
+		if(tree[i] >= 48 && tree[i] <= 57)
+		{
+			char node[5];
+			j = 0;
+			while(tree[i] != '.')
+			{
+				node[j++] = tree[i++];
+			}
+			node[j] = '\0';
+			long int node_value = string_long(node);
+			if(node_value == sample1 || node_value == sample2)
+			{
+				if(node_value == sample1)
+				{
+					person1 = sample1;
+					person2 = sample2;
+				}
+				else
+				{
+					person1 = sample2;
+					person2 = sample1;
+				}
+				// get the tMRCA, then wait for the futher processing
+				while(tree[i++] != ':');
+				char tmrca[20];  // I give this double type number 20 effective digits; it is just kidding of course
+				j = 0;
+				while(tree[i] != ',' && tree[i] != ')' && tree[i] != '\0')
+				{
+					tmrca[j++] = tree[i];
+					i++;
+				}
+				tmrca[j] = '\0';
+				tMRCA = string_double(tmrca);
+				// now the pointer points to a ',' or ')'
+				break;
+			}
+			else
+			{
+				// simply jump beyond the tMRCA, then continue in this while loop
+				while(tree[i] != ',' && tree[i] != ')' && tree[i] != '\0')i++;
+			}
+			continue;
+		}
+	}
+
+	// finding, closing and moving up
+	// start from ',' or ')', and now we have already had a tMRCA
+	int finish = 0;
+	while(tree[i] != '\0')
+	{
+		if(tree[i] == ',')  // there is a ',', we shoud perform finding and closing; if successful, break out
+		{
+			int mark = 1;
+			i++;
+			while(mark)
+			{
+				// if this is the target, jump out; otherwise, skimp this node
+				if(tree[i] >= 48 && tree[i] <= 57)
+				{
+					// extract the node and judge
+					char node[5];
+					j = 0;
+					while(tree[i] != '.')
+					{
+						node[j++] = tree[i++];
+					}
+					node[j] = '\0';
+					long int node_value = string_long(node);
+					if(node_value == person2)
+					{
+						finish = 1;
+						break;
+					}
+					while(tree[i] != ',' && tree[i] != ')' && tree[i] != '\0')i++;
+					continue;
+				}
+
+				if(tree[i] == ')')
+				{
+					mark -= 1;
+					if(mark != 0)
+					{
+						i++;
+						while(tree[i] != ',' && tree[i] != ')' && tree[i] != '\0')i++;
+					}
+					continue;
+				}
+
+				if(tree[i] == '(')
+				{
+					mark += 1;
+					i++;
+					continue;
+				}
+
+				i++;
+			}
+
+			if(finish)  // we find the other node, jump out the whole loop
+			{
+				break;
+			}
+		}
+		else  // this is the ')', and we should move up
+		{
+			// moving up and continue in this while loop
+			while(tree[i++] != ':');
+			char tmrca[20];  // I give this double type number 20 effective digits; it is just kidding of course
+			j = 0;
+			while(tree[i] != ',' && tree[i] != ')' && tree[i] != '\0')
+			{
+				tmrca[j++] = tree[i];
+				i++;
+			}
+			tmrca[j] = '\0';
+			tMRCA += string_double(tmrca);
+			// now the pointer points to a ',' or '), continue
+		}
+	}
+
+	return tMRCA;
+}
+
 // end of Naive_parser.cpp

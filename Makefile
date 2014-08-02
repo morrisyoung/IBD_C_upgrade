@@ -16,6 +16,7 @@ EXECUTABLE_BINARY=	IBDdetection_binary
 all:
 	@echo Please choose from \"make naive\", \"make binary\" and \"make verify\" to compile and link...
 
+
 # this is the n^2 naive method (changed-pair detection) for IBD extraction
 naive: main_naive clean mv_naive
 

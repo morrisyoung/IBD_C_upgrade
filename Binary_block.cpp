@@ -20,7 +20,7 @@
 // this block is where the binary search actually exists
 
 // Jul 27
-// finished
+// finished; but you understand TT....
 
 
 #include "Binary_block.h"
@@ -104,6 +104,21 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 	for(auto itr = can_list1.begin(); itr != can_list1.end(); itr ++)
 	{
 		name = (*itr).first;
+		//============ get the sample pair =============
+		name += 1;
+		if(name % SAMPLE == 0)
+		{
+			sample1 = name / SAMPLE;
+			sample2 = SAMPLE;
+		}
+		else
+		{
+			sample1 = name / SAMPLE + 1;
+			sample2 = name % SAMPLE;
+		}
+		name -= 1;
+		//==============================================
+
 		//tMRCA = (*itr).second;
 		direction = (int)((*lca_env_rep).size()/2);
 		pointer = -1;
@@ -113,20 +128,6 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			pointer += direction;
 			lca_package = &(*lca_env_rep)[pointer];
 
-			//============ get the sample pair =============
-			name += 1;
-			if(name % SAMPLE == 0)
-			{
-				sample1 = name / SAMPLE;
-				sample2 = SAMPLE;
-			}
-			else
-			{
-				sample1 = name / SAMPLE + 1;
-				sample2 = name % SAMPLE;
-			}
-			name -= 1;
-			//==============================================
 			//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
 			tMRCA = getMRCA(sample1, sample2, lca_package);
 
@@ -147,6 +148,36 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			// judge
 			if(direction == 0)	// if the interval of new package and old package is too small, terminate
 				break;
+		}
+
+		// by now the lca_package_target is of course not the real one; we should move on to find it out
+		if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)
+		{
+			// backward move
+			while(1)
+			{
+				pointer -= 1;
+				lca_package = &(*lca_env_rep)[pointer];
+				//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
+				tMRCA = getMRCA(sample1, sample2, lca_package);
+				if(tMRCA - (*itr).second <= TOLERANCE && tMRCA - (*itr).second >= -TOLERANCE)
+					break;
+				lca_package_target = lca_package;
+			}
+		}
+		else
+		{
+			// forward move
+			while(1)
+			{
+				pointer += 1;
+				lca_package = &(*lca_env_rep)[pointer];
+				lca_package_target = lca_package;
+				//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
+				tMRCA = getMRCA(sample1, sample2, lca_package);
+				if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)
+					break;
+			}
 		}
 
 		IBDreport(sample1, sample2, table[name], lca_package_target->coordinate);
@@ -156,6 +187,20 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 	for(auto itr = can_list2.begin(); itr != can_list2.end(); itr ++)
 	{
 		name = (*itr).first;
+		//============ get the sample pair =============
+		name += 1;
+		if(name % SAMPLE == 0)
+		{
+			sample1 = name / SAMPLE;
+			sample2 = SAMPLE;
+		}
+		else
+		{
+			sample1 = name / SAMPLE + 1;
+			sample2 = name % SAMPLE;
+		}
+		name -= 1;
+		//==============================================
 		//tMRCA = (*itr).second;
 		direction = (int)((*lca_env_rep).size()/2);
 		pointer = -1;
@@ -165,20 +210,6 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 			pointer += direction;
 			lca_package = &(*lca_env_rep)[pointer];
 
-			//============ get the sample pair =============
-			name += 1;
-			if(name % SAMPLE == 0)
-			{
-				sample1 = name / SAMPLE;
-				sample2 = SAMPLE;
-			}
-			else
-			{
-				sample1 = name / SAMPLE + 1;
-				sample2 = name % SAMPLE;
-			}
-			name -= 1;
-			//==============================================
 			//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
 			tMRCA = getMRCA(sample1, sample2, lca_package);
 
@@ -201,8 +232,38 @@ void block_level(long int * table, double * table_tMRCA, block_package * previou
 				break;
 		}
 
+		// by now the lca_package_target is of course not the real one; we should move on to find it out
+		if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)
+		{
+			// forward move
+			while(1)
+			{
+				pointer += 1;
+				lca_package = &(*lca_env_rep)[pointer];
+				lca_package_target = lca_package;
+				//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
+				tMRCA = getMRCA(sample1, sample2, lca_package);
+				if(tMRCA - (*itr).second <= TOLERANCE && tMRCA - (*itr).second >= -TOLERANCE)
+					break;
+			}
+		}
+		else
+		{
+			// backward move
+			while(1)
+			{
+				pointer -= 1;
+				lca_package = &(*lca_env_rep)[pointer];
+				//tMRCA = tMRCA_find(pool_env[pointer], sample1, sample2);
+				tMRCA = getMRCA(sample1, sample2, lca_package);
+				if(tMRCA - (*itr).second > TOLERANCE || tMRCA - (*itr).second < -TOLERANCE)
+					break;
+				lca_package_target = lca_package;
+			}
+		}
+
 		table[name] = lca_package_target->coordinate;
-		table_tMRCA[name] = tMRCA;
+		table_tMRCA[name] = getMRCA(sample1, sample2, lca_package_target);;
 	}
 	//================================== binary search done ==================================
 

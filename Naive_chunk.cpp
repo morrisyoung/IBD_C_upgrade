@@ -111,6 +111,14 @@ void * chunk_level(void * p)
     {
         naive_update(coordinate, tree, table_coordinate, table_tMRCA);
 
+
+
+        // DEBUG
+        if(coordinate >= 40000000 && coordinate <= 43000000)
+            cout << coordinate << " " << tMRCA_find(tree, 8, 10) << " " << endl;
+
+
+
         //===== test =====
         count ++;
         if(count % 100 == 0)

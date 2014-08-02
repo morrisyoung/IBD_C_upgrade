@@ -97,7 +97,7 @@ int main()
     //
     //
     //
-    sprintf(filename, "%s", "test_1000G_50I_100Million.trees");
+    sprintf(filename, "%s", "test_n3.trees");
     // test.trees has 1000 samples in, and there are 150,056 trees in
 
     // the output filehandle

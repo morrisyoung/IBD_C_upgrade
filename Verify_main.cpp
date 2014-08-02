@@ -59,7 +59,7 @@ double TOLERANCE = 0.01;
 long int SAMPLE;
 long int TREELEN;
 int THREADS = 1;                // for this implementation, the THREADS will always be 1, because we don't want to use ulti-threads for this
-long int CUTOFF = 4000000;            // FILL
+long int CUTOFF = 1000000;            // FILL
 long int FILTER;
 long int DISCRETIZATION = 0;
 long int CLENGTH = 100000000;       // FILL
